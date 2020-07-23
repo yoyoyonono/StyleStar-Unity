@@ -9,8 +9,41 @@ public static class ConfigFile
 {
     public static string FilePath { get; set; } = Defines.ConfigFile;
     public static bool IsLoaded { get; private set; } = false;
+    public static Language LocalizedLanguage { get; set; } = Language.English;
 
     private static Dictionary<string, object> configTable;
+
+    private static Dictionary<string, object> localizationTable = null;
+
+    private static string GetLocalizedLanguageString(Language lang = Language.None)
+    {
+        string localizedLang = "";
+        Language usedLang = lang;
+        if (usedLang == Language.None)
+            usedLang = LocalizedLanguage;
+
+        switch (usedLang)
+        {
+            case Language.French: localizedLang = "French"; break;
+            case Language.Japanese: localizedLang = "Japanese"; break;
+            case Language.Spanish: localizedLang = "Spanish"; break;
+            case Language.English:
+            default: localizedLang = "English"; break;
+        }
+        return localizedLang;
+    }
+
+    private static void SetLocalizedLanguage(int localLangKey)
+    {
+        switch (localLangKey)
+        {
+            case 3: LocalizedLanguage = Language.French; break;
+            case 2: LocalizedLanguage = Language.Japanese; break;
+            case 1: LocalizedLanguage = Language.Spanish; break;
+            case 0:
+            default: LocalizedLanguage = Language.English; break;
+        }
+    }
 
     private static void CreateConfigFile()
     {
@@ -31,7 +64,7 @@ public static class ConfigFile
         tomlConfigTable.Add("TouchConfig", touchConfigDict);
 
         Dictionary<string, object> gameConfigDict = new Dictionary<string, object>();
-        gameConfigDict.Add("Language", 0);
+        gameConfigDict.Add("Language", (int)LocalizedLanguage);
         gameConfigDict.Add("Resolution", 0);
         gameConfigDict.Add("TouchScreenOrientation", 0);
         gameConfigDict.Add("EnableFreePlay", true);
@@ -51,6 +84,17 @@ public static class ConfigFile
             CreateConfigFile();
 
         configTable = Toml.ReadFile(Defines.ConfigFile).ToDictionary();
+
+        if (File.Exists(Defines.LanguageConfig))
+            localizationTable = Toml.ReadFile(Defines.LanguageConfig).ToDictionary();
+
+        // Set the localized language for the rest of the run, unless changed in options
+        if (configTable.ContainsKey(Defines.GameConfig))
+        {
+            Dictionary<string, object> gameOpts = (Dictionary<string, object>)configTable["GameConfig"];
+            if (gameOpts.ContainsKey("Language"))
+                SetLocalizedLanguage(Convert.ToInt32(gameOpts["Language"]));
+        }
 
         if (configTable.ContainsKey(Defines.TouchConfig))
             TouchSettings.SetConfig((Dictionary<string, object>)configTable[Defines.TouchConfig]);
@@ -96,6 +140,18 @@ public static class ConfigFile
                 return ((Dictionary<string, object>)dict.Value)[key];
         }
         return null;
+    }
+
+    public static string GetLocalizedString(string stringKey, Language lang = Language.None)
+    {
+        string outStr = "";
+        if (localizationTable != null)
+        {
+            string localizedLang = GetLocalizedLanguageString(lang);
+            if (localizationTable.ContainsKey(localizedLang))
+                outStr = ((string)((Dictionary<string, object>)localizationTable[localizedLang])[stringKey]);
+        }
+        return outStr;
     }
 
     //public void UpdateGlobals()

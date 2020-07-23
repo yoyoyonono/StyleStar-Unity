@@ -3,17 +3,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using StyleStar;
 using System;
-using System.Linq;
 using UnityEngine.SceneManagement;
 
-public class GameSettingsScreenDisplay : MonoBehaviour
+public class LanguageSelectDisplay : MonoBehaviour
 {
     public GameObject Bg1;
     public GameObject Bg2;
     public GameObject Bg3;
-    public GameObject OptionBase;
-    public GameObject Selection;
-    public GameObject ConfirmReject;
+    public GameObject Confirm;
 
     private RectTransform loadingLeft;
     private RectTransform loadingRight;
@@ -52,13 +49,9 @@ public class GameSettingsScreenDisplay : MonoBehaviour
         Bg2.SetColor(ThemeColors.Blue);
         Bg3.SetColor(ThemeColors.Yellow);
 
-        Pools.GameSettingOptions = ScriptableObject.CreateInstance<ObjectPooler>();
-        Pools.GameSettingOptions.SetPool(OptionBase, 10, true, this.gameObject);
+        LanguageSelect.Initialize(Confirm);
 
-        GameSettingsScreen.Initialize(Selection, ConfirmReject);
-        GameSettingsScreen.SetConfig(ConfigFile.GetTable(Defines.GameConfig));
-
-        ConfirmReject.SetActive(false);
+        Confirm.SetActive(false);
 
         init = true;
     }
@@ -73,7 +66,7 @@ public class GameSettingsScreenDisplay : MonoBehaviour
         if (!transitionFinished)
             return;
 
-        GameSettingsScreen.Draw();
+        LanguageSelect.Draw();
         Util.TranslateRawImage(ref backgroundImage, Globals.BackgroundOffset);
 
         float ratio;
@@ -84,7 +77,7 @@ public class GameSettingsScreenDisplay : MonoBehaviour
                 if (ratio >= 1.0f)
                 {
                     GameState.TransitionState = TransitionState.ScreenActive;
-                    GameState.GameMode = Mode.GameSettings;
+                    GameState.GameMode = Mode.LanguageSelect;
                 }
                 break;
             case TransitionState.ScreenActive:
@@ -101,12 +94,6 @@ public class GameSettingsScreenDisplay : MonoBehaviour
             case TransitionState.SwitchingScreens:
                 if (!loadStarted)
                 {
-                    Globals.CurrentNoteCollection = new NoteCollection(SongSelection.GetSelectedMetadata());
-                    Globals.CurrentSongMetadata = Globals.CurrentNoteCollection.ParseFile();
-
-                    Globals.MusicManager.LoadSong(Globals.CurrentSongMetadata.FilePath + Globals.CurrentSongMetadata.SongFilename, Globals.CurrentSongMetadata.BpmEvents);
-                    Globals.MusicManager.Offset = Globals.CurrentSongMetadata.PlaybackOffset * 1000;
-
                     StartCoroutine(Util.SwitchSceneAsync());
                     loadStarted = true;
                 }
@@ -131,7 +118,7 @@ public class GameSettingsScreenDisplay : MonoBehaviour
         var xLeft = Math.Min(-200, -200 - Globals.LoadingScreenWidth * ratio);
         var xRight = Math.Max(200, 200 + Globals.LoadingScreenWidth * ratio);
 
-        loadingRight.anchoredPosition = new Vector2(xRight, 0);        
+        loadingRight.anchoredPosition = new Vector2(xRight, 0);
         loadingLeft.anchoredPosition = new Vector2(xLeft, 0);
 
         return ratio;
